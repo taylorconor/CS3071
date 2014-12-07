@@ -37,7 +37,7 @@
 module TastierMachine.Machine where
 import qualified TastierMachine.Instructions as Instructions
 import Data.Int (Int8, Int16)
-import Data.Char (intToDigit)
+import Data.Char (intToDigit, chr)
 import Numeric (showIntAtBase)
 import Data.Bits (complement)
 import Data.Array ((//), (!), Array, elems)
@@ -46,7 +46,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.IO (hFlush, stdout)
 import Data.List (intersperse)
 
-debug' m@(Machine rpc rtp rbp imem _ _) = do {
+debug' m@(Machine rpc rtp rbp imem _ _ _) = do {
   putStrLn $
     concat $
       intersperse "\t| " $
@@ -68,7 +68,9 @@ data Machine = Machine { rpc :: Int16,  -- ^ next instruction to execute
                          imem :: (Array Int16 Instructions.InstructionWord),
                                                       -- ^ instruction memory
                          dmem :: (Array Int16 Int16), -- ^ data memory
-                         smem :: (Array Int16 Int16)  -- ^ stack memory
+                         smem :: (Array Int16 Int16), -- ^ stack memory
+
+                         pbuf :: String -- screen printing buffer
                        }
                        deriving (Show)
 
@@ -79,7 +81,7 @@ data Machine = Machine { rpc :: Int16,  -- ^ next instruction to execute
 
 run :: RWS [Int16] [String] Machine ()
 run = do
-  machine'@(Machine rpc rtp rbp imem dmem smem) <- get
+  machine'@(Machine rpc rtp rbp imem dmem smem pbuf) <- get
   let machine = debug machine'
   let instructionWord = imem ! rpc
 
@@ -138,6 +140,14 @@ run = do
                           smem = (smem // [(rtp-2, result)]) }
           run
 
+        Instructions.NEqu    -> do
+          let a = smem ! (rtp-1)
+          let b = smem ! (rtp-2)
+          let result = fromIntegral $ fromEnum (b /= a)
+          put $ machine { rpc = rpc + 1, rtp = rtp - 1,
+                          smem = (smem // [(rtp-2, result)]) }
+          run
+
         Instructions.Lss    -> do
           let a = smem ! (rtp-1)
           let b = smem ! (rtp-2)
@@ -146,10 +156,26 @@ run = do
                           smem = (smem // [(rtp-2, result)]) }
           run
 
+        Instructions.LssEq    -> do
+          let a = smem ! (rtp-1)
+          let b = smem ! (rtp-2)
+          let result = fromIntegral $ fromEnum (b <= a)
+          put $ machine { rpc = rpc + 1, rtp = rtp - 1,
+                          smem = (smem // [(rtp-2, result)]) }
+          run
+
         Instructions.Gtr    -> do
           let a = smem ! (rtp-1)
           let b = smem ! (rtp-2)
           let result = fromIntegral $ fromEnum (b > a)
+          put $ machine { rpc = rpc + 1, rtp = rtp - 1,
+                          smem = (smem // [(rtp-2, result)]) }
+          run
+
+        Instructions.GtrEq    -> do
+          let a = smem ! (rtp-1)
+          let b = smem ! (rtp-2)
+          let result = fromIntegral $ fromEnum (b >= a)
           put $ machine { rpc = rpc + 1, rtp = rtp - 1,
                           smem = (smem // [(rtp-2, result)]) }
           run
@@ -177,8 +203,22 @@ run = do
             [] -> error $ "Read instruction issued but no data left to read"
 
         Instructions.Write  -> do
-          tell $ [show $ smem ! (rtp-1)]
-          put $ machine { rpc = rpc + 1, rtp = rtp - 1 }
+          put $ machine { rpc = rpc + 1, rtp = rtp - 1, pbuf = pbuf ++ (show $ smem ! (rtp-1)) }
+          run
+
+        Instructions.WriteS -> do
+          let ptr = smem ! (rtp-1)
+          put $ machine { rpc = rpc + 1, rtp = rtp - 1, pbuf = pbuf ++ (getStr (ptr-3) dmem "") }
+          run
+          where
+            getStr :: Int16 -> (Array Int16 Int16) -> String -> String
+            getStr i m s
+              | (m ! i) == 0 = s
+              | otherwise = getStr (i-1) m (s ++ [chr (fromIntegral (m ! i) :: Int)])
+
+        Instructions.Print -> do
+          tell $ [pbuf]
+          put $ machine { rpc = rpc + 1, rtp = rtp - 1, pbuf = "" }
           run
 
         Instructions.Leave  -> do

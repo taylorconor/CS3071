@@ -1,0 +1,6 @@
+program Test {
+  void Main() {
+    write 1, 2;
+  }
+}
+

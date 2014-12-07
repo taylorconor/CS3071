@@ -7,8 +7,11 @@ data Instruction = Add
                  | Mul
                  | Div
                  | Equ
+				 | NEqu
                  | Lss
+				 | LssEq
                  | Gtr
+				 | GtrEq
                  | Neg
                  | Load
                  | Sto
@@ -23,6 +26,8 @@ data Instruction = Add
                  | Leave
                  | Read
                  | Write
+                 | WriteS
+                 | Print
                  | Halt
                  | Dup
                  | Nop

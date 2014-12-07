@@ -26,8 +26,11 @@ parseInstruction lineNumber text =
     ["Mul"]         -> Right $ I.Nullary I.Mul
     ["Div"]         -> Right $ I.Nullary I.Div
     ["Equ"]         -> Right $ I.Nullary I.Equ
+    ["NEqu"]        -> Right $ I.Nullary I.NEqu
     ["Lss"]         -> Right $ I.Nullary I.Lss
     ["Gtr"]         -> Right $ I.Nullary I.Gtr
+    ["LssEq"]       -> Right $ I.Nullary I.LssEq
+    ["GtrEq"]       -> Right $ I.Nullary I.GtrEq
     ["Neg"]         -> Right $ I.Nullary I.Neg
     ["Load", a, b]  ->
       let a' = B.readInteger a
@@ -106,6 +109,8 @@ parseInstruction lineNumber text =
     ["Leave"]       -> Right $ I.Nullary I.Leave
     ["Read"]        -> Right $ I.Nullary I.Read
     ["Write"]       -> Right $ I.Nullary I.Write
+    ["WriteS"]      -> Right $ I.Nullary I.WriteS
+    ["Print"]       -> Right $ I.Nullary I.Print
     ["Halt"]        -> Right $ I.Nullary I.Halt
     ["Dup"]         -> Right $ I.Nullary I.Dup
     ["Nop"]         -> Right $ I.Nullary I.Nop
