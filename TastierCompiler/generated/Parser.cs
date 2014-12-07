@@ -17,7 +17,7 @@ public class Parser {
 	public const int _ident = 1;
 	public const int _number = 2;
 	public const int _string = 3;
-	public const int maxT = 36;
+	public const int maxT = 40;
 
 	const bool T = true;
 	const bool x = false;
@@ -392,7 +392,7 @@ int globalPtr = 0;
 		} else if (la.kind == 5) {
 			Get();
 			inst = new Instruction("", "Sub"); 
-		} else SynErr(37);
+		} else SynErr(41);
 	}
 
 	void Expr(out TastierType type) {
@@ -458,7 +458,7 @@ int globalPtr = 0;
 			inst = new Instruction("", "Gtr"); 
 			break;
 		}
-		default: SynErr(38); break;
+		default: SynErr(42); break;
 		}
 	}
 
@@ -583,7 +583,7 @@ TastierKind kind) {
 			program.Add(new Instruction("", "Const " + 0)); type = TastierType.Boolean; 
 			break;
 		}
-		default: SynErr(39); break;
+		default: SynErr(43); break;
 		}
 	}
 
@@ -691,7 +691,7 @@ TastierKind kind) {
 			program.Add(new Instruction("", "Const " + 0)); type = TastierType.Boolean; 
 			break;
 		}
-		default: SynErr(40); break;
+		default: SynErr(44); break;
 		}
 	}
 
@@ -702,7 +702,7 @@ TastierKind kind) {
 		} else if (la.kind == 9) {
 			Get();
 			inst = new Instruction("", "Div"); 
-		} else SynErr(41);
+		} else SynErr(45);
 	}
 
 	void ProcDecl() {
@@ -739,7 +739,7 @@ TastierKind kind) {
 		}
 		
 		while (StartOf(2)) {
-			if (la.kind == 30 || la.kind == 31 || la.kind == 32) {
+			if (la.kind == 34 || la.kind == 35 || la.kind == 36) {
 				VarDecl(external);
 			} else if (StartOf(3)) {
 				Stat();
@@ -794,7 +794,7 @@ TastierKind kind) {
 		
 		                          }
 		                      
-		while (la.kind == 28) {
+		while (la.kind == 32) {
 			Get();
 			Ident(out name);
 			if (external) {
@@ -816,7 +816,7 @@ TastierKind kind) {
 	}
 
 	void Stat() {
-		TastierType type; string name; Symbol sym; bool external = false; bool isExternal = false; 
+		TastierType type, type1, type2; string name; Symbol sym; bool external = false; bool isExternal = false; 
 		switch (la.kind) {
 		case 1: {
 			Ident(out name);
@@ -839,23 +839,68 @@ TastierKind kind) {
 				}
 				
 				Expr(out type);
-				Expect(22);
-				if (type != (TastierType)sym.Item3) {
-				 SemErr("incompatible types");
-				}
-				if (sym.Item4 == 0) {
-				 if (isExternal) {
-				   program.Add(new Instruction("", "StoG " + sym.Item1));
-				   // if the symbol is external, we also store it by name. The linker will resolve the name to an address.
-				 } else {
-				   program.Add(new Instruction("", "StoG " + (sym.Item5+3)));
-				 }
-				}
-				else {
-				 int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
-				 program.Add(new Instruction("", "Sto " + lexicalLevelDifference + " " + sym.Item5));
-				}
-				
+				if (la.kind == 22) {
+					Get();
+					if (type != (TastierType)sym.Item3) {
+					 SemErr("incompatible types");
+					}
+					if (sym.Item4 == 0) {
+					 if (isExternal) {
+					   program.Add(new Instruction("", "StoG " + sym.Item1));
+					   // if the symbol is external, we also store it by name. The linker will resolve the name to an address.
+					 } else {
+					   program.Add(new Instruction("", "StoG " + (sym.Item5+3)));
+					 }
+					}
+					else {
+					 int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
+					 program.Add(new Instruction("", "Sto " + lexicalLevelDifference + " " + sym.Item5));
+					}
+					
+				} else if (la.kind == 23) {
+					Get();
+					if ((TastierType)type != TastierType.Boolean) {
+					 SemErr("boolean type expected for condition");
+					}
+					openLabels.Push(generateLabel());
+					program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
+					
+					Expr(out type1);
+					Expect(24);
+					if (type1 != (TastierType)sym.Item3) {
+					 SemErr("type in conditional statement does not match");
+					}
+					Instruction startOfElse = new Instruction(openLabels.Pop(), "Nop");
+					/*
+					  If we got into the "if", we need to
+					  jump over the "else" so that it
+					  doesn't get executed.
+					*/
+					openLabels.Push(generateLabel());
+					program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
+					program.Add(startOfElse);
+					
+					Expr(out type2);
+					if (type2 != (TastierType)sym.Item3) {
+					 SemErr("type in conditional statement does not match");
+					}
+					program.Add(new Instruction(openLabels.Pop(), "Nop"));
+					
+					Expect(22);
+					if (sym.Item4 == 0) {
+					 if (isExternal) {
+					   program.Add(new Instruction("", "StoG " + sym.Item1));
+					   // if the symbol is external, we also store it by name. The linker will resolve the name to an address.
+					 } else {
+					   program.Add(new Instruction("", "StoG " + (sym.Item5+3)));
+					 }
+					}
+					else {
+					 int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
+					 program.Add(new Instruction("", "Sto " + lexicalLevelDifference + " " + sym.Item5));
+					} 
+					
+				} else SynErr(46);
 			} else if (la.kind == 11) {
 				Get();
 				Expect(12);
@@ -869,10 +914,10 @@ TastierKind kind) {
 				string procedureLabel = getLabelForProcedureName(lexicalLevelDifference, sym.Item1);
 				program.Add(new Instruction("", "Call " + lexicalLevelDifference + " " + procedureLabel));
 				
-			} else SynErr(42);
+			} else SynErr(47);
 			break;
 		}
-		case 23: {
+		case 25: {
 			Get();
 			Expect(11);
 			Expr(out type);
@@ -894,14 +939,14 @@ TastierKind kind) {
 			program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
 			program.Add(startOfElse);
 			
-			if (la.kind == 24) {
+			if (la.kind == 26) {
 				Get();
 				Stat();
 			}
 			program.Add(new Instruction(openLabels.Pop(), "Nop")); 
 			break;
 		}
-		case 25: {
+		case 27: {
 			Get();
 			string loopStartLabel = generateLabel();
 			openLabels.Push(generateLabel()); //second label is for the loop end
@@ -921,7 +966,46 @@ TastierKind kind) {
 			
 			break;
 		}
-		case 26: {
+		case 28: {
+			Get();
+			Expect(11);
+			StatAssign();
+			string loopStartLabel = generateLabel();
+			openLabels.Push(generateLabel()); //second label is for the loop end
+			program.Add(new Instruction(loopStartLabel, "Nop"));
+			
+			Expr(out type);
+			Expect(22);
+			if ((TastierType)type != TastierType.Boolean) {
+			 SemErr("boolean type expected");
+			}
+			program.Add(new Instruction("", "FJmp " + openLabels.Peek())); // jump to the loop end label if condition is false
+			int conditionCount = program.Count-1;
+			
+			StatAssign();
+			Expect(12);
+			Program iterator = new Program();
+			Instruction ins;
+			while (program.Count-1 != conditionCount) {
+			   ins = program[program.Count-1];
+			   program.RemoveAt(program.Count-1);
+			   iterator.Add(ins);
+			}
+			iterator.Reverse();
+			
+			Expect(29);
+			Expect(13);
+			Stat();
+			Expect(14);
+			foreach (Instruction i in iterator) {
+			   program.Add(i);
+			}
+			program.Add(new Instruction("", "Jmp " + loopStartLabel));
+			program.Add(new Instruction(openLabels.Pop(), "Nop")); // put the loop end label here
+			
+			break;
+		}
+		case 30: {
 			Get();
 			Ident(out name);
 			Expect(22);
@@ -960,7 +1044,7 @@ TastierKind kind) {
 			
 			break;
 		}
-		case 27: {
+		case 31: {
 			Get();
 			Expr(out type);
 			if (type == TastierType.Integer) {
@@ -973,7 +1057,7 @@ TastierKind kind) {
 			   SemErr("unexpected type");
 			}
 			
-			while (la.kind == 28) {
+			while (la.kind == 32) {
 				Get();
 				Expr(out type);
 				if (type == TastierType.Integer) {
@@ -1004,7 +1088,7 @@ TastierKind kind) {
 			Expect(14);
 			break;
 		}
-		default: SynErr(43); break;
+		default: SynErr(48); break;
 		}
 	}
 
@@ -1039,17 +1123,102 @@ TastierKind kind) {
 		}
 	}
 
+	void StatAssign() {
+		TastierType type, type1, type2; string name; Symbol sym; bool external = false; bool isExternal = false; 
+		Ident(out name);
+		sym = lookup(openScopes, name);
+		if (sym == null) {
+		 sym = _lookup(externalDeclarations, name);
+		 isExternal = true;
+		}
+		if (sym == null) {
+		 SemErr("reference to undefined variable " + name);
+		}
+		
+		Expect(21);
+		if ((TastierKind)sym.Item2 == TastierKind.Const) {
+		 SemErr("cannot reassign a constant");
+		}
+		else if ((TastierKind)sym.Item2 != TastierKind.Var) {
+		 SemErr("cannot assign to non-variable");
+		}
+		
+		Expr(out type);
+		if (la.kind == 22) {
+			Get();
+			if (type != (TastierType)sym.Item3) {
+			 SemErr("incompatible types");
+			}
+			if (sym.Item4 == 0) {
+			 if (isExternal) {
+			   program.Add(new Instruction("", "StoG " + sym.Item1));
+			   // if the symbol is external, we also store it by name. The linker will resolve the name to an address.
+			 } else {
+			   program.Add(new Instruction("", "StoG " + (sym.Item5+3)));
+			 }
+			}
+			else {
+			 int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
+			 program.Add(new Instruction("", "Sto " + lexicalLevelDifference + " " + sym.Item5));
+			}
+			
+		} else if (la.kind == 23) {
+			Get();
+			if ((TastierType)type != TastierType.Boolean) {
+			 SemErr("boolean type expected for condition");
+			}
+			openLabels.Push(generateLabel());
+			program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
+			
+			Expr(out type1);
+			Expect(24);
+			if (type1 != (TastierType)sym.Item3) {
+			 SemErr("type in conditional statement does not match");
+			}
+			Instruction startOfElse = new Instruction(openLabels.Pop(), "Nop");
+			/*
+			  If we got into the "if", we need to
+			  jump over the "else" so that it
+			  doesn't get executed.
+			*/
+			openLabels.Push(generateLabel());
+			program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
+			program.Add(startOfElse);
+			
+			Expr(out type2);
+			if (type2 != (TastierType)sym.Item3) {
+			 SemErr("type in conditional statement does not match");
+			}
+			program.Add(new Instruction(openLabels.Pop(), "Nop"));
+			
+			Expect(22);
+			if (sym.Item4 == 0) {
+			 if (isExternal) {
+			   program.Add(new Instruction("", "StoG " + sym.Item1));
+			   // if the symbol is external, we also store it by name. The linker will resolve the name to an address.
+			 } else {
+			   program.Add(new Instruction("", "StoG " + (sym.Item5+3)));
+			 }
+			}
+			else {
+			 int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
+			 program.Add(new Instruction("", "Sto " + lexicalLevelDifference + " " + sym.Item5));
+			} 
+			
+		} else SynErr(49);
+	}
+
 	void Tastier() {
 		string name; bool external = false; 
-		Expect(29);
+		Expect(33);
 		Ident(out name);
 		openScopes.Push(new Scope());
 		
 		Expect(13);
 		while (StartOf(5)) {
-			if (la.kind == 30 || la.kind == 31 || la.kind == 32) {
+			if (la.kind == 34 || la.kind == 35 || la.kind == 36) {
 				VarDecl(external);
-			} else if (la.kind == 35) {
+			} else if (la.kind == 39) {
 				ConstDecl(external);
 			} else if (la.kind == 10) {
 				ProcDecl();
@@ -1096,7 +1265,7 @@ TastierKind kind) {
 		string name; TastierType type; Scope currentScope = openScopes.Peek(); Symbol sym;
 		TastierKind k = TastierKind.Const;
 		
-		Expect(35);
+		Expect(39);
 		Ident(out name);
 		Expect(21);
 		ExprK(out type, k);
@@ -1126,29 +1295,29 @@ TastierKind kind) {
 
 	void ExternDecl() {
 		string name; bool external = true; Scope currentScope = openScopes.Peek(); int count = currentScope.Count; 
-		Expect(33);
-		if (la.kind == 30 || la.kind == 31 || la.kind == 32) {
+		Expect(37);
+		if (la.kind == 34 || la.kind == 35 || la.kind == 36) {
 			VarDecl(external);
-		} else if (la.kind == 34) {
+		} else if (la.kind == 38) {
 			Get();
 			Ident(out name);
 			Expect(22);
 			externalDeclarations.Push(new Symbol(name, (int)TastierKind.Proc, (int)TastierType.Undefined, 1, -1)); 
-		} else SynErr(44);
+		} else SynErr(50);
 	}
 
 	void Type(out TastierType type) {
 		type = TastierType.Undefined; 
-		if (la.kind == 30) {
+		if (la.kind == 34) {
 			Get();
 			type = TastierType.Integer; 
-		} else if (la.kind == 31) {
+		} else if (la.kind == 35) {
 			Get();
 			type = TastierType.Boolean; 
-		} else if (la.kind == 32) {
+		} else if (la.kind == 36) {
 			Get();
 			type = TastierType.String;  
-		} else SynErr(45);
+		} else SynErr(51);
 	}
 
 
@@ -1163,12 +1332,12 @@ TastierKind kind) {
 	}
 
 	static readonly bool[,] set = {
-		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,T, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x},
-		{x,T,x,x, x,x,x,x, x,x,T,x, x,T,x,x, x,x,x,x, x,x,x,T, x,T,T,T, x,x,T,T, T,x,x,x, x,x},
-		{x,T,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,T, x,T,T,T, x,x,x,x, x,x,x,x, x,x},
-		{x,T,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,T, x,T,T,T, x,x,T,T, T,x,x,x, x,x},
-		{x,x,x,x, x,x,x,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,T, T,T,x,T, x,x}
+		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,T, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x},
+		{x,T,x,x, x,x,x,x, x,x,T,x, x,T,x,x, x,x,x,x, x,x,x,x, x,T,x,T, T,x,T,T, x,x,T,T, T,x,x,x, x,x},
+		{x,T,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,T,x,T, T,x,T,T, x,x,x,x, x,x,x,x, x,x},
+		{x,T,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,T,x,T, T,x,T,T, x,x,T,T, T,x,x,x, x,x},
+		{x,x,x,x, x,x,x,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,T, T,T,x,T, x,x}
 
 	};
 } // end Parser
@@ -1205,29 +1374,35 @@ public class Errors {
 			case 20: s = "\">\" expected"; break;
 			case 21: s = "\":=\" expected"; break;
 			case 22: s = "\";\" expected"; break;
-			case 23: s = "\"if\" expected"; break;
-			case 24: s = "\"else\" expected"; break;
-			case 25: s = "\"while\" expected"; break;
-			case 26: s = "\"read\" expected"; break;
-			case 27: s = "\"write\" expected"; break;
-			case 28: s = "\",\" expected"; break;
-			case 29: s = "\"program\" expected"; break;
-			case 30: s = "\"int\" expected"; break;
-			case 31: s = "\"bool\" expected"; break;
-			case 32: s = "\"string\" expected"; break;
-			case 33: s = "\"external\" expected"; break;
-			case 34: s = "\"procedure\" expected"; break;
-			case 35: s = "\"const\" expected"; break;
-			case 36: s = "??? expected"; break;
-			case 37: s = "invalid AddOp"; break;
-			case 38: s = "invalid RelOp"; break;
-			case 39: s = "invalid Factor"; break;
-			case 40: s = "invalid FactorK"; break;
-			case 41: s = "invalid MulOp"; break;
-			case 42: s = "invalid Stat"; break;
-			case 43: s = "invalid Stat"; break;
-			case 44: s = "invalid ExternDecl"; break;
-			case 45: s = "invalid Type"; break;
+			case 23: s = "\"?\" expected"; break;
+			case 24: s = "\":\" expected"; break;
+			case 25: s = "\"if\" expected"; break;
+			case 26: s = "\"else\" expected"; break;
+			case 27: s = "\"while\" expected"; break;
+			case 28: s = "\"for\" expected"; break;
+			case 29: s = "\"do\" expected"; break;
+			case 30: s = "\"read\" expected"; break;
+			case 31: s = "\"write\" expected"; break;
+			case 32: s = "\",\" expected"; break;
+			case 33: s = "\"program\" expected"; break;
+			case 34: s = "\"int\" expected"; break;
+			case 35: s = "\"bool\" expected"; break;
+			case 36: s = "\"string\" expected"; break;
+			case 37: s = "\"external\" expected"; break;
+			case 38: s = "\"procedure\" expected"; break;
+			case 39: s = "\"const\" expected"; break;
+			case 40: s = "??? expected"; break;
+			case 41: s = "invalid AddOp"; break;
+			case 42: s = "invalid RelOp"; break;
+			case 43: s = "invalid Factor"; break;
+			case 44: s = "invalid FactorK"; break;
+			case 45: s = "invalid MulOp"; break;
+			case 46: s = "invalid Stat"; break;
+			case 47: s = "invalid Stat"; break;
+			case 48: s = "invalid Stat"; break;
+			case 49: s = "invalid StatAssign"; break;
+			case 50: s = "invalid ExternDecl"; break;
+			case 51: s = "invalid Type"; break;
 
 			default: s = "error " + n; break;
 		}

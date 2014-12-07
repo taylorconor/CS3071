@@ -606,7 +606,7 @@ SimExprK<out TastierType type,
 
 /*------------------------------------------------------------------------*/
 
-Stat                            (.  TastierType type; string name; Symbol sym; bool external = false; bool isExternal = false; .)
+Stat                            (.  TastierType type, type1, type2; string name; Symbol sym; bool external = false; bool isExternal = false; .)
 
 = Ident<out name>               (.
                                     sym = lookup(openScopes, name);
@@ -626,7 +626,8 @@ Stat                            (.  TastierType type; string name; Symbol sym; b
                                       SemErr("cannot assign to non-variable");
                                     }
                                 .)
-    Expr<out type> ';'
+    Expr<out type> 
+    ( ';'
                                 (.
                                     if (type != (TastierType)sym.Item3) {
                                       SemErr("incompatible types");
@@ -644,6 +645,48 @@ Stat                            (.  TastierType type; string name; Symbol sym; b
                                       program.Add(new Instruction("", "Sto " + lexicalLevelDifference + " " + sym.Item5));
                                     }
                                 .)
+    | '?'                       (.
+                                    if ((TastierType)type != TastierType.Boolean) {
+                                      SemErr("boolean type expected for condition");
+                                    }
+                                    openLabels.Push(generateLabel());
+                                    program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
+                                .)
+      Expr<out type1> ':'       (.
+                                    if (type1 != (TastierType)sym.Item3) {
+                                      SemErr("type in conditional statement does not match");
+                                    }
+                                    Instruction startOfElse = new Instruction(openLabels.Pop(), "Nop");
+                                    /*
+                                       If we got into the "if", we need to
+                                       jump over the "else" so that it
+                                       doesn't get executed.
+                                    */
+                                    openLabels.Push(generateLabel());
+                                    program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
+                                    program.Add(startOfElse);
+                                .)
+      Expr<out type2>           (.
+                                    if (type2 != (TastierType)sym.Item3) {
+                                      SemErr("type in conditional statement does not match");
+                                    }
+                                    program.Add(new Instruction(openLabels.Pop(), "Nop"));
+                                .)
+      ';'                       (.
+                                    if (sym.Item4 == 0) {
+                                      if (isExternal) {
+                                        program.Add(new Instruction("", "StoG " + sym.Item1));
+                                        // if the symbol is external, we also store it by name. The linker will resolve the name to an address.
+                                      } else {
+                                        program.Add(new Instruction("", "StoG " + (sym.Item5+3)));
+                                      }
+                                    }
+                                    else {
+                                      int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
+                                      program.Add(new Instruction("", "Sto " + lexicalLevelDifference + " " + sym.Item5));
+                                   } 
+                                .)
+    )
   | '(' ')' ';'                 (.
                                     if ((TastierKind)sym.Item2 != TastierKind.Proc) {
                                       SemErr("object is not a procedure");
@@ -690,6 +733,40 @@ Stat                            (.  TastierType type; string name; Symbol sym; b
                                     program.Add(new Instruction("", "FJmp " + openLabels.Peek())); // jump to the loop end label if condition is false
                                 .)
       Stat                      (.  program.Add(new Instruction("", "Jmp " + loopStartLabel));
+                                    program.Add(new Instruction(openLabels.Pop(), "Nop")); // put the loop end label here
+                                .)
+
+| "for" '('
+  StatAssign                    (.  string loopStartLabel = generateLabel();
+                                    openLabels.Push(generateLabel()); //second label is for the loop end
+                                    program.Add(new Instruction(loopStartLabel, "Nop"));
+                                .)
+  Expr<out type> ';'
+                                (.
+                                    if ((TastierType)type != TastierType.Boolean) {
+                                      SemErr("boolean type expected");
+                                    }
+                                    program.Add(new Instruction("", "FJmp " + openLabels.Peek())); // jump to the loop end label if condition is false
+                                    int conditionCount = program.Count-1;
+                                .)
+  StatAssign ')'
+                                (.
+                                    Program iterator = new Program();
+                                    Instruction ins;
+                                    while (program.Count-1 != conditionCount) {
+                                        ins = program[program.Count-1];
+                                        program.RemoveAt(program.Count-1);
+                                        iterator.Add(ins);
+                                    }
+                                    iterator.Reverse();
+                                .)
+  "do" '{'                     
+  Stat
+  '}'                           (.  
+                                    foreach (Instruction i in iterator) {
+                                        program.Add(i);
+                                    }
+                                    program.Add(new Instruction("", "Jmp " + loopStartLabel));
                                     program.Add(new Instruction(openLabels.Pop(), "Nop")); // put the loop end label here
                                 .)
 
@@ -763,6 +840,89 @@ Stat                            (.  TastierType type; string name; Symbol sym; b
 
 | '{' { Stat | VarDecl<external> } '}' .
 
+
+StatAssign                      (.  TastierType type, type1, type2; string name; Symbol sym; bool external = false; bool isExternal = false; .)
+
+= Ident<out name>               (.
+                                    sym = lookup(openScopes, name);
+                                    if (sym == null) {
+                                      sym = _lookup(externalDeclarations, name);
+                                      isExternal = true;
+                                    }
+                                    if (sym == null) {
+                                      SemErr("reference to undefined variable " + name);
+                                    }
+                                .)
+  ":="                          (.
+                                    if ((TastierKind)sym.Item2 == TastierKind.Const) {
+                                      SemErr("cannot reassign a constant");
+                                    }
+                                    else if ((TastierKind)sym.Item2 != TastierKind.Var) {
+                                      SemErr("cannot assign to non-variable");
+                                    }
+                                .)
+  Expr<out type> 
+  ( ';'
+                                (.
+                                    if (type != (TastierType)sym.Item3) {
+                                      SemErr("incompatible types");
+                                    }
+                                    if (sym.Item4 == 0) {
+                                      if (isExternal) {
+                                        program.Add(new Instruction("", "StoG " + sym.Item1));
+                                        // if the symbol is external, we also store it by name. The linker will resolve the name to an address.
+                                      } else {
+                                        program.Add(new Instruction("", "StoG " + (sym.Item5+3)));
+                                      }
+                                    }
+                                    else {
+                                      int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
+                                      program.Add(new Instruction("", "Sto " + lexicalLevelDifference + " " + sym.Item5));
+                                    }
+                                .)
+  | '?'                         (.
+                                    if ((TastierType)type != TastierType.Boolean) {
+                                      SemErr("boolean type expected for condition");
+                                    }
+                                    openLabels.Push(generateLabel());
+                                    program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
+                                .)
+    Expr<out type1> ':'         (.
+                                    if (type1 != (TastierType)sym.Item3) {
+                                      SemErr("type in conditional statement does not match");
+                                    }
+                                    Instruction startOfElse = new Instruction(openLabels.Pop(), "Nop");
+                                    /*
+                                       If we got into the "if", we need to
+                                       jump over the "else" so that it
+                                       doesn't get executed.
+                                    */
+                                    openLabels.Push(generateLabel());
+                                    program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
+                                    program.Add(startOfElse);
+                                .)
+    Expr<out type2>             (.
+                                    if (type2 != (TastierType)sym.Item3) {
+                                      SemErr("type in conditional statement does not match");
+                                    }
+                                    program.Add(new Instruction(openLabels.Pop(), "Nop"));
+                                .)
+    ';'                         (.
+                                    if (sym.Item4 == 0) {
+                                      if (isExternal) {
+                                        program.Add(new Instruction("", "StoG " + sym.Item1));
+                                        // if the symbol is external, we also store it by name. The linker will resolve the name to an address.
+                                      } else {
+                                        program.Add(new Instruction("", "StoG " + (sym.Item5+3)));
+                                      }
+                                    }
+                                    else {
+                                      int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
+                                      program.Add(new Instruction("", "Sto " + lexicalLevelDifference + " " + sym.Item5));
+                                   } 
+                                .)
+    ).
+ 
 
 /*------------------------------------------------------------------------*/
 

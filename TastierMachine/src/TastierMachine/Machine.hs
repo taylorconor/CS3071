@@ -203,12 +203,13 @@ run = do
             [] -> error $ "Read instruction issued but no data left to read"
 
         Instructions.Write  -> do
-          put $ machine { rpc = rpc + 1, rtp = rtp - 1, pbuf = pbuf ++ (show $ smem ! (rtp-1)) }
+          let str = (show $ smem ! (rtp-1))
+          put $ machine { rpc = rpc + 1, rtp = rtp + 1, pbuf = pbuf ++ str }
           run
 
         Instructions.WriteS -> do
           let ptr = smem ! (rtp-1)
-          put $ machine { rpc = rpc + 1, rtp = rtp - 1, pbuf = pbuf ++ (getStr (ptr-3) dmem "") }
+          put $ machine { rpc = rpc + 1, rtp = rtp + 1, pbuf = pbuf ++ (getStr (ptr-3) dmem "") }
           run
           where
             getStr :: Int16 -> (Array Int16 Int16) -> String -> String
