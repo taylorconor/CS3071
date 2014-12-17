@@ -760,15 +760,62 @@ Stat                            (.  TastierType type, type1, type2; string name;
                                     }
                                     iterator.Reverse();
                                 .)
-  "do" '{'                     
+  "do"                    
   Stat
-  '}'                           (.  
+                                 (.  
                                     foreach (Instruction i in iterator) {
                                         program.Add(i);
                                     }
                                     program.Add(new Instruction("", "Jmp " + loopStartLabel));
                                     program.Add(new Instruction(openLabels.Pop(), "Nop")); // put the loop end label here
                                 .)
+
+| "switch" '('                   (.
+                                    int switchCount = program.Count-1;
+                                 .)
+  Expr<out type>
+  ')' '{'                        (.
+                                    if ((TastierType)type != TastierType.Integer) {
+                                        SemErr("integer type expected");
+                                    }
+                                    Program comparator = new Program();
+                                    Instruction ins;
+                                    while (program.Count-1 != switchCount) {
+                                        ins = program[program.Count-1];
+                                        program.RemoveAt(program.Count-1);
+                                        comparator.Add(ins);
+                                    }
+                                    comparator.Reverse();
+                                    string endLabel = generateLabel();
+                                .)
+  {
+    "case"
+    Factor<out type1>
+    ':'
+                                (.
+                                    if (type1 != type) {
+                                        SemErr("types differ in switch statement case");
+                                    }
+
+                                    foreach (Instruction i in comparator) {
+                                        program.Add(i);
+                                    }
+                                    openLabels.Push(generateLabel());
+                                    program.Add(new Instruction("", "Equ"));
+                                    program.Add(new Instruction("", "FJmp "+openLabels.Peek()));
+                                .)
+    Stat                        (.
+                                    program.Add(new Instruction("", "Jmp "+endLabel));
+                                    program.Add(new Instruction(openLabels.Pop(), "Nop"));
+                                .)
+  }
+  
+  "default:"
+  Stat
+                                (.
+                                   program.Add(new Instruction(endLabel, "Nop"));
+                                .)
+  '}'
 
 | "read"
   Ident<out name> ';'           (.
