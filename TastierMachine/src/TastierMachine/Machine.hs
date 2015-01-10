@@ -356,9 +356,13 @@ run = do
               dimensions    = getIndices b b []
               offset        = getOffset (b-1) indices dimensions (last indices)
               
-          put $ trace("s_tuple = ("++show (a+offset-3)++", "++show (smem ! (rtp - (1 + b * 2)))++")") $ machine { rpc = rpc + 1, rtp = rtp - (2 * b + 1),
+          case checkBounds indices dimensions of
+            (True,_)   -> do
+                put $ trace("S: indices = "++show indices++", dimensions = "++show dimensions++", offset = "++show offset++", tuple = ("++show (a+offset-3)++", "++show (smem ! (rtp - (1 + b * 2)))++")") $ machine { rpc = rpc + 1, rtp = rtp - (2 * b + 1),
                           dmem = (dmem // [(a+offset-3, smem ! (rtp - (1 + b * 2)))]) }
-          run
+                run
+            (False,s)  -> do
+                error $ "Index out of bounds error: "++show s
           where 
             getIndices :: Int16 -> Int16 -> [Int16] -> [Int16]
             getIndices x y z
@@ -367,10 +371,19 @@ run = do
                     let item = read (show $ smem ! (rtp-x-y)) :: Int16
                     in getIndices x (y-1) (z++[item])
 
-            lastN :: Int16 -> [Int16] -> [Int16]
-            lastN n xs = drop (length xs - (fromIntegral n)) xs
+            checkBounds :: [Int16] -> [Int16] -> (Bool, Int16)
+            checkBounds [x] [y]
+                | x >= y    = (False, x)
+                | otherwise = (True, 0)
 
-            mulDimensions :: Int16 -> [Int16] -> Int16
+            checkBounds (x:xs) (y:ys)
+                | x >= y    = (False, x)
+                | otherwise = checkBounds xs ys
+
+            lastN :: Int -> [Int16] -> [Int16]
+            lastN n xs = drop (length xs - n) xs
+
+            mulDimensions :: Int -> [Int16] -> Int16
             mulDimensions x y
                 | x == 0    = 1
                 | otherwise = product (lastN x y)
@@ -381,9 +394,8 @@ run = do
                 | otherwise =
                     let iIndex = (fromIntegral w) - 1
                         dIndex = ((length y) - 1) - iIndex
-                    in getOffset (w-1) x y (z + ((x !! iIndex) * (y !! dIndex))) 
+                    in getOffset (w-1) x y (z + ((x !! iIndex) * (mulDimensions dIndex y)))
 
-        
         Instructions.LoadArr   -> do
           {-
             param a is the starting position of the block of memory assigned
@@ -393,7 +405,7 @@ run = do
               dimensions    = getIndices b b [] 
               offset        = getOffset (b-1) indices dimensions (last indices)
           
-          put $ trace("l_tuple = ("++show rtp++", "++show (dmem ! (a+offset-3))++"), "++show (a+offset-3)) $ machine { rpc = rpc + 1, rtp = rtp - (2 * b) + 1,
+          put $ trace("L: indices = "++show indices++", dimensions = "++show dimensions++", offset = "++show offset++", tuple = ("++show rtp++", "++show (dmem ! (a+offset-3))++")") $ machine { rpc = rpc + 1, rtp = rtp - (2 * b) + 1,
                           smem = (smem // [(rtp - (2 * b), (dmem ! (a+offset-3)))]) }
           run
           where
@@ -404,10 +416,10 @@ run = do
                     let item = read (show $ smem ! (rtp-x-y)) :: Int16
                     in getIndices x (y-1) (z++[item])
 
-            lastN :: Int16 -> [Int16] -> [Int16]
-            lastN n xs = drop (length xs - (fromIntegral n)) xs
+            lastN :: Int -> [Int16] -> [Int16]
+            lastN n xs = drop (length xs - n) xs
 
-            mulDimensions :: Int16 -> [Int16] -> Int16
+            mulDimensions :: Int -> [Int16] -> Int16
             mulDimensions x y
                 | x == 0    = 1
                 | otherwise = product (lastN x y)
@@ -418,7 +430,7 @@ run = do
                 | otherwise =
                     let iIndex = (fromIntegral w) - 1
                         dIndex = ((length y) - 1) - iIndex
-                    in getOffset (w-1) x y (z + ((x !! iIndex) * (y !! dIndex))) 
+                    in getOffset (w-1) x y (z + ((x !! iIndex) * (mulDimensions dIndex y)))
 {-
   followChain follows the static link chain to find the absolute address in
   stack memory of the base of the stack frame (n-limit) levels down the call
