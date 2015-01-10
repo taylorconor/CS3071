@@ -1,8 +1,6 @@
 program Test {
   void Main() {
 
-    //m[0][0] := 5;
-
     int i, j;
     int m[3][3];
     for (i := 0; i < 3; i := i + 1;) do {
@@ -16,10 +14,6 @@ program Test {
             write m[i][j];
         }
     }
-
-    string s;
-    s := "yohoho";
-    write s, m[2][2];
 
 
     //write m[0][0];

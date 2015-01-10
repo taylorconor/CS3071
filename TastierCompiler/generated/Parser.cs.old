@@ -556,7 +556,6 @@ TastierKind kind) {
 			}
 			
 			if (la.kind == 6) {
-				Console.WriteLine("Inside");
 				Array found = arrays.Find(item => item.name == name); 
 				if (found == null) {
 				   SemErr("Array lookup error");

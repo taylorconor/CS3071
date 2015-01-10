@@ -873,7 +873,7 @@ TastierKind kind) {
 		// now we can generate the Enter instruction properly
 		program[enterInstLocation] =
 		 new Instruction(label, "Enter " +
-		                 currentScope.Count(s => s.Item2 == (int)TastierKind.Var));
+		                 currentScope.Count(s => s.Item2 == (int)TastierKind.Var || s.Item2 == (int)TastierKind.Array));
 		openProcedureDeclarations.Pop();
 		
 	}

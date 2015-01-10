@@ -70,30 +70,5 @@ Sub
 Sto 0 0
 Jmp L$4
 L$5: Nop
-Const 0
-StoG 12
-Const 111
-StoG 13
-Const 104
-StoG 14
-Const 111
-StoG 15
-Const 104
-StoG 16
-Const 111
-StoG 17
-Const 121
-StoG 18
-Const 18
-Sto 0 3
-Load 0 3
-WriteS
-Const 3
-Const 3
-Const 2
-Const 2
-LoadArr 3 2
-Write
-Print
 Leave
 Ret
