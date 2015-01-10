@@ -45,6 +45,7 @@ import Control.Monad.RWS.Lazy (RWS, put, get, ask, tell, local)
 import System.IO.Unsafe (unsafePerformIO)
 import System.IO (hFlush, stdout)
 import Data.List (intersperse)
+import Debug.Trace
 
 debug' m@(Machine rpc rtp rbp imem _ _ _) = do {
   putStrLn $
@@ -70,7 +71,7 @@ data Machine = Machine { rpc :: Int16,  -- ^ next instruction to execute
                          dmem :: (Array Int16 Int16), -- ^ data memory
                          smem :: (Array Int16 Int16), -- ^ stack memory
 
-                         pbuf :: String -- screen printing buffer
+                         pbuf :: String    -- screen printing buffer
                        }
                        deriving (Show)
 
@@ -346,6 +347,78 @@ run = do
                           smem = (smem // [(rtp, (rpc+1)), (rtp+1, a)]) }
           run
 
+        Instructions.StoArr   -> do
+          {-
+            param a is the starting position of the block of memory assigned
+            to the array, and param b is the dimensions of the array 
+          -}
+          let indices       = getIndices 0 b []
+              dimensions    = getIndices b b []
+              offset        = getOffset (b-1) indices dimensions (last indices)
+              
+          put $ trace("s_tuple = ("++show (a+offset-3)++", "++show (smem ! (rtp - (1 + b * 2)))++")") $ machine { rpc = rpc + 1, rtp = rtp - (2 * b + 1),
+                          dmem = (dmem // [(a+offset-3, smem ! (rtp - (1 + b * 2)))]) }
+          run
+          where 
+            getIndices :: Int16 -> Int16 -> [Int16] -> [Int16]
+            getIndices x y z
+                | y == 0    = z
+                | otherwise = 
+                    let item = read (show $ smem ! (rtp-x-y)) :: Int16
+                    in getIndices x (y-1) (z++[item])
+
+            lastN :: Int16 -> [Int16] -> [Int16]
+            lastN n xs = drop (length xs - (fromIntegral n)) xs
+
+            mulDimensions :: Int16 -> [Int16] -> Int16
+            mulDimensions x y
+                | x == 0    = 1
+                | otherwise = product (lastN x y)
+
+            getOffset :: Int16 -> [Int16] -> [Int16] -> Int16 -> Int16
+            getOffset w x y z
+                | w == 0    = z
+                | otherwise =
+                    let iIndex = (fromIntegral w) - 1
+                        dIndex = ((length y) - 1) - iIndex
+                    in getOffset (w-1) x y (z + ((x !! iIndex) * (y !! dIndex))) 
+
+        
+        Instructions.LoadArr   -> do
+          {-
+            param a is the starting position of the block of memory assigned
+            to the array, and param b is the dimensions of the array 
+          -}
+          let indices       = getIndices 0 b []
+              dimensions    = getIndices b b [] 
+              offset        = getOffset (b-1) indices dimensions (last indices)
+          
+          put $ trace("l_tuple = ("++show rtp++", "++show (dmem ! (a+offset-3))++"), "++show (a+offset-3)) $ machine { rpc = rpc + 1, rtp = rtp - (2 * b) + 1,
+                          smem = (smem // [(rtp - (2 * b), (dmem ! (a+offset-3)))]) }
+          run
+          where
+            getIndices :: Int16 -> Int16 -> [Int16] -> [Int16]
+            getIndices x y z
+                | y == 0    = z
+                | otherwise = 
+                    let item = read (show $ smem ! (rtp-x-y)) :: Int16
+                    in getIndices x (y-1) (z++[item])
+
+            lastN :: Int16 -> [Int16] -> [Int16]
+            lastN n xs = drop (length xs - (fromIntegral n)) xs
+
+            mulDimensions :: Int16 -> [Int16] -> Int16
+            mulDimensions x y
+                | x == 0    = 1
+                | otherwise = product (lastN x y)
+
+            getOffset :: Int16 -> [Int16] -> [Int16] -> Int16 -> Int16
+            getOffset w x y z
+                | w == 0    = z
+                | otherwise =
+                    let iIndex = (fromIntegral w) - 1
+                        dIndex = ((length y) - 1) - iIndex
+                    in getOffset (w-1) x y (z + ((x !! iIndex) * (y !! dIndex))) 
 {-
   followChain follows the static link chain to find the absolute address in
   stack memory of the base of the stack frame (n-limit) levels down the call

@@ -26,7 +26,7 @@ main = do
     let inputLines = filter (not . B.null) $ B.lines dataFile
     let inputData = map getFirstIntegerFromString inputLines
     let program = (listArray (0, fromIntegral $ (length insns)-1) insns)
-    let machine' = machine { Machine.imem = program }
+    let machine' = machine {  Machine.imem = program }
     let (machine'', output) = execRWS Machine.run inputData machine'
     machine''' <- Machine.debug' machine''
     putStrLn $ show output

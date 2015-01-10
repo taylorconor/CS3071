@@ -54,6 +54,28 @@ parseInstruction lineNumber text =
                     (fromIntegral $ fst y)
           _ -> Left $ ["Sto", a, b]
 
+    ["StoArr", a, b]   ->
+      let a' = B.readInteger a
+          b' = B.readInteger b
+      in
+        case (a', b') of
+          (Just x, Just y) ->
+            Right $ I.Binary I.StoArr 
+                    (fromIntegral $ fst x)
+                    (fromIntegral $ fst y)
+          _ -> Left $ ["StoArr", a, b]
+
+    ["LoadArr", a, b]   ->
+      let a' = B.readInteger a
+          b' = B.readInteger b
+      in
+        case (a', b') of
+          (Just x, Just y) ->
+            Right $ I.Binary I.LoadArr 
+                    (fromIntegral $ fst x)
+                    (fromIntegral $ fst y)
+          _ -> Left $ ["LoadArr", a, b]
+
     ["LoadG", a]    ->
       let a' = B.readInteger a
       in
@@ -104,6 +126,7 @@ parseInstruction lineNumber text =
                           (convert $ B.readInteger a)
                           (convert $ B.readInteger b)
         _ -> Left $ ["Call", a, b]
+    
 
     ["Ret"]         -> Right $ I.Nullary I.Ret
     ["Leave"]       -> Right $ I.Nullary I.Leave
