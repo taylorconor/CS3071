@@ -4,7 +4,7 @@ program Test {
   int g[5];
 
   void Main() {
-    
+
     int i, j, k, m[2][2][2];
     string s[3];
 

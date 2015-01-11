@@ -408,9 +408,14 @@ run = do
               dimensions    = getIndices b b [] 
               offset        = getOffset (b-1) indices dimensions (last indices)
           
-          put $ machine { rpc = rpc + 1, rtp = rtp - (2 * b) + 1,
+          case checkBounds indices dimensions of
+            (True,_)   -> do
+                put $ machine { rpc = rpc + 1, rtp = rtp - (2 * b) + 1,
                           smem = (smem // [(rtp - (2 * b), (dmem ! (a+offset-3)))]) }
-          run
+                run
+            (False,s)  -> do
+                error $ "Index out of bounds error: "++show s
+
           where
             getIndices :: Int16 -> Int16 -> [Int16] -> [Int16]
             getIndices x y z
@@ -418,6 +423,15 @@ run = do
                 | otherwise = 
                     let item = read (show $ smem ! (rtp-x-y)) :: Int16
                     in getIndices x (y-1) (z++[item])
+
+            checkBounds :: [Int16] -> [Int16] -> (Bool, Int16)
+            checkBounds [x] [y]
+                | x >= y    = (False, x)
+                | otherwise = (True, 0)
+
+            checkBounds (x:xs) (y:ys)
+                | x >= y    = (False, x)
+                | otherwise = checkBounds xs ys
 
             lastN :: Int -> [Int16] -> [Int16]
             lastN n xs = drop (length xs - n) xs

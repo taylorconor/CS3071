@@ -6,69 +6,69 @@ Main: Enter 6
 Const 7
 StoG 3
 Const 0
-StoG 21
+StoG 17
 Const 121
-StoG 22
+StoG 18
 Const 114
-StoG 23
+StoG 19
 Const 114
-StoG 24
+StoG 20
 Const 101
-StoG 25
+StoG 21
 Const 98
-StoG 26
+StoG 22
 Const 119
-StoG 27
+StoG 23
 Const 97
-StoG 28
+StoG 24
 Const 114
-StoG 29
+StoG 25
 Const 116
-StoG 30
+StoG 26
 Const 115
-StoG 31
-Const 31
+StoG 27
+Const 27
 Const 3
 Const 0
-StoArr 18 1
+StoArr 14 1
 Const 0
-StoG 32
+StoG 28
 Const 115
-StoG 33
+StoG 29
 Const 100
-StoG 34
+StoG 30
 Const 108
-StoG 35
+StoG 31
 Const 101
-StoG 36
+StoG 32
 Const 105
-StoG 37
+StoG 33
 Const 102
-StoG 38
-Const 38
+StoG 34
+Const 34
 Const 3
 Const 1
-StoArr 18 1
+StoArr 14 1
 Const 0
+StoG 35
+Const 114
+StoG 36
+Const 101
+StoG 37
+Const 118
+StoG 38
+Const 101
 StoG 39
 Const 114
 StoG 40
-Const 101
-StoG 41
-Const 118
-StoG 42
-Const 101
-StoG 43
-Const 114
-StoG 44
 Const 111
-StoG 45
+StoG 41
 Const 102
-StoG 46
-Const 46
+StoG 42
+Const 42
 Const 3
 Const 2
-StoArr 18 1
+StoArr 14 1
 Const 0
 Sto 0 5
 L$0: Nop
@@ -78,7 +78,7 @@ Lss
 FJmp L$1
 Const 3
 Load 0 5
-LoadArr 18 1
+LoadArr 14 1
 WriteS
 Print
 Load 0 5
@@ -123,7 +123,7 @@ Mul
 Add
 Load 0 2
 Add
-Const 2
+Const 1
 Const 2
 Const 2
 Load 0 5
@@ -149,7 +149,7 @@ Sto 0 5
 Jmp L$2
 L$3: Nop
 Const 1
-Const 2
+Const 1
 Const 2
 Const 2
 Const 1
@@ -159,35 +159,35 @@ LoadArr 10 3
 Equ
 FJmp L$10
 Const 0
-StoG 47
+StoG 43
 Const 101
-StoG 48
+StoG 44
 Const 115
-StoG 49
+StoG 45
 Const 97
-StoG 50
+StoG 46
 Const 99
-StoG 51
+StoG 47
 Const 32
-StoG 52
+StoG 48
 Const 116
-StoG 53
+StoG 49
 Const 115
-StoG 54
+StoG 50
 Const 114
-StoG 55
+StoG 51
 Const 105
-StoG 56
+StoG 52
 Const 102
-StoG 57
-Const 57
+StoG 53
+Const 53
 WriteS
 Print
 Jmp L$8
 L$10: Nop
 Const 0
 Load 0 5
-Const 2
+Const 1
 Const 2
 Const 2
 Const 1
@@ -196,7 +196,7 @@ Const 1
 LoadArr 10 3
 NEqu
 FJmp L$11
-Const 2
+Const 1
 Const 2
 Const 2
 Const 1
@@ -207,30 +207,30 @@ Equ
 FJmp L$12
 L$11: Nop
 Const 0
-StoG 58
+StoG 54
 Const 101
-StoG 59
+StoG 55
 Const 115
-StoG 60
+StoG 56
 Const 97
-StoG 61
+StoG 57
 Const 99
-StoG 62
+StoG 58
 Const 32
-StoG 63
+StoG 59
 Const 100
-StoG 64
+StoG 60
 Const 110
-StoG 65
+StoG 61
 Const 111
-StoG 66
+StoG 62
 Const 99
-StoG 67
+StoG 63
 Const 101
-StoG 68
+StoG 64
 Const 115
-StoG 69
-Const 69
+StoG 65
+Const 65
 WriteS
 Print
 Jmp L$8
@@ -239,7 +239,7 @@ LoadG 3
 Const 5
 Const 0
 LoadArr 4 1
-Const 2
+Const 1
 Const 2
 Const 2
 Const 1
@@ -248,7 +248,7 @@ Const 1
 LoadArr 10 3
 NEqu
 FJmp L$13
-Const 2
+Const 1
 Const 2
 Const 2
 Const 1
@@ -259,59 +259,59 @@ Equ
 FJmp L$14
 L$13: Nop
 Const 0
-StoG 70
+StoG 66
 Const 101
-StoG 71
+StoG 67
 Const 115
-StoG 72
+StoG 68
 Const 97
-StoG 73
+StoG 69
 Const 99
-StoG 74
+StoG 70
 Const 32
-StoG 75
+StoG 71
 Const 100
-StoG 76
+StoG 72
 Const 114
-StoG 77
+StoG 73
 Const 105
-StoG 78
+StoG 74
 Const 104
-StoG 79
+StoG 75
 Const 116
-StoG 80
-Const 80
+StoG 76
+Const 76
 WriteS
 Print
 Jmp L$8
 L$14: Nop
 Const 0
-StoG 81
+StoG 77
 Const 101
-StoG 82
+StoG 78
 Const 115
-StoG 83
+StoG 79
 Const 97
-StoG 84
+StoG 80
 Const 99
-StoG 85
+StoG 81
 Const 32
-StoG 86
+StoG 82
 Const 116
-StoG 87
+StoG 83
 Const 108
-StoG 88
+StoG 84
 Const 117
-StoG 89
+StoG 85
 Const 97
-StoG 90
+StoG 86
 Const 102
-StoG 91
+StoG 87
 Const 101
-StoG 92
+StoG 88
 Const 100
-StoG 93
-Const 93
+StoG 89
+Const 89
 WriteS
 Print
 L$8: Nop
