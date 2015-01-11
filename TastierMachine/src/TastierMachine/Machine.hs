@@ -45,7 +45,6 @@ import Control.Monad.RWS.Lazy (RWS, put, get, ask, tell, local)
 import System.IO.Unsafe (unsafePerformIO)
 import System.IO (hFlush, stdout)
 import Data.List (intersperse)
-import Debug.Trace
 
 debug' m@(Machine rpc rtp rbp imem _ _ _) = do {
   putStrLn $
@@ -98,7 +97,7 @@ run = do
           run
 
         Instructions.Nop -> do
-          put $ trace("smem = "++take 200 (show smem)++"\ndmem = "++take 200 (show dmem)) $ machine { rpc = rpc + 1 }
+          put $ machine { rpc = rpc + 1 }
           run
 
         Instructions.Add -> do
@@ -213,7 +212,7 @@ run = do
           if ptr < 3 then do
             error $ "null pointer error; string not initialised"
           else do
-            put $ trace("ptr = "++show ptr) $ machine { rpc = rpc + 1, rtp = rtp + 1, pbuf = pbuf ++ (getStr (ptr-3) dmem "") }
+            put $ machine { rpc = rpc + 1, rtp = rtp + 1, pbuf = pbuf ++ (getStr (ptr-3) dmem "") }
             run
           where
             getStr :: Int16 -> (Array Int16 Int16) -> String -> String

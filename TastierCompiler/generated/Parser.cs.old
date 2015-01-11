@@ -538,7 +538,6 @@ TastierKind kind) {
 			}
 			else {
 			 type = (TastierType)sym.Item3;
-			 Console.WriteLine("Type = "+(TastierType)sym.Item3+", Kind = "+(TastierKind)sym.Item2);
 			 if ((TastierKind)sym.Item2 == TastierKind.Var || (TastierKind)sym.Item2 == TastierKind.Const) {
 			   if (sym.Item4 == 0) {
 			       if (isExternal) {
