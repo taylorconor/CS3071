@@ -1,39 +1,47 @@
 program Test {
+
+  const c := 7;
+  int g[5];
+
   void Main() {
-
-    int i, j;
-    int m[3][3];
-    for (i := 0; i < 3; i := i + 1;) do {
-        for (j := 0; j < 3; j := j + 1;) do {
-            m[i][j] := i*3 + j;
-        }
-    }
-
-    for (i := 2; i >= 0; i := i - 1;) do {
-        for (j := 2; j >= 0; j := j - 1;) do {
-            write m[i][j];
-        }
-    }
-
-
-    //write m[0][0];
     
-    /*
-    int x;
-    x := 4;
+    int i, j, k, m[2][2][2];
+    string s[3];
+
+    s[0] := "strawberry";
+    s[1] := "fields";
+    s[2] := "forever";
+
     int i;
-    i := 4;
-    switch (i) {
+    for (i := 0; i < 3; i := i + 1;) do {
+        write s[i];
+    }
+
+    g[0] := 50;
+
+    for (i := 0; i < 2; i := i + 1;) do {
+        for (j := 0; j < 2; j := j + 1;) do {
+            for (k := 0; k < 2; k := k + 1;) do {
+                m[i][j][k] := 2*2*i + 2*j + k;
+            }
+        }
+    }
+
+
+    switch (m[1][1][1]) {
       case 1: {
-        write 1;
+        write "first case";
       }
-      case x: {
-        write 456;
+      case 0, i: {
+        write "second case";
+      }
+      case c, g[0]: {
+        write "third case";
       }
       default: {
-        write 123;
+        write "default case";
       }
-    }*/
+    }
   }
 }
 

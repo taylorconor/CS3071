@@ -248,8 +248,8 @@ public class Scanner {
 		start[58] = 27; 
 		start[59] = 21; 
 		start[63] = 22; 
+		start[44] = 23; 
 		start[100] = 28; 
-		start[44] = 24; 
 		start[Buffer.EOF] = -1;
 
 	}
@@ -372,8 +372,8 @@ public class Scanner {
 			case "do": t.kind = 31; break;
 			case "switch": t.kind = 32; break;
 			case "case": t.kind = 33; break;
-			case "read": t.kind = 35; break;
-			case "write": t.kind = 36; break;
+			case "read": t.kind = 36; break;
+			case "write": t.kind = 37; break;
 			case "program": t.kind = 38; break;
 			case "int": t.kind = 39; break;
 			case "bool": t.kind = 40; break;
@@ -462,7 +462,7 @@ public class Scanner {
 			case 23:
 				{t.kind = 34; break;}
 			case 24:
-				{t.kind = 37; break;}
+				{t.kind = 35; break;}
 			case 25:
 				recEnd = pos; recKind = 21;
 				if (ch == '=') {AddCh(); goto case 18;}
@@ -508,7 +508,7 @@ public class Scanner {
 			case 34:
 				recEnd = pos; recKind = 1;
 				if (ch >= '0' && ch <= '9' || ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z') {AddCh(); goto case 1;}
-				else if (ch == ':') {AddCh(); goto case 23;}
+				else if (ch == ':') {AddCh(); goto case 24;}
 				else {t.kind = 1; t.val = new String(tval, 0, tlen); CheckLiteral(); return t;}
 
 		}

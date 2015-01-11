@@ -521,7 +521,7 @@ TastierKind kind) {
 	}
 
 	void Factor(out TastierType type) {
-		int n; Symbol sym; string name; 
+		int n; Symbol sym; string name; TastierType type1;
 		type = TastierType.Undefined; 
 		switch (la.kind) {
 		case 1: {
@@ -570,18 +570,18 @@ TastierKind kind) {
 				int count = 0;
 				
 				Get();
-				SimFactor(out type);
+				SimFactor(out type1);
 				Expect(7);
-				if (type != TastierType.Integer) {
+				if (type1 != TastierType.Integer) {
 				   SemErr("Integer index expected");
 				}
 				count++;
 				
 				while (la.kind == 6) {
 					Get();
-					SimFactor(out type);
+					SimFactor(out type1);
 					Expect(7);
-					if (type != TastierType.Integer) {
+					if (type1 != TastierType.Integer) {
 					   SemErr("Integer index expected");
 					}
 					count++;
@@ -917,7 +917,7 @@ TastierKind kind) {
 		                            currentScope.Push(new Symbol(name, (int)kind, (int)type, openScopes.Count-1, l));
 		                          }
 		                     
-		while (la.kind == 37) {
+		while (la.kind == 34) {
 			Get();
 			Ident(out name);
 			if (la.kind == 6) {
@@ -934,6 +934,7 @@ TastierKind kind) {
 					
 					Expect(7);
 				}
+				a.position = globalPtr;
 				arrays.Add(a);
 				globalPtr += a.size();    
 				
@@ -1218,6 +1219,37 @@ TastierKind kind) {
 			while (la.kind == 33) {
 				Get();
 				Factor(out type1);
+				string fallintoLabel = generateLabel(); bool needsLabel = false; 
+				if (la.kind == 34) {
+					Get();
+					Factor(out type2);
+					needsLabel = true;
+					
+					if (type2 != type) {
+					   SemErr("types differ in switch statement case");
+					}
+					
+					foreach (Instruction i in comparator) {
+					   program.Add(i);
+					}
+					program.Add(new Instruction("", "NEqu"));
+					program.Add(new Instruction("", "FJmp "+fallintoLabel));
+					
+					while (la.kind == 34) {
+						Get();
+						Factor(out type2);
+						if (type2 != type) {
+						   SemErr("types differ in switch statement case");
+						}
+						
+						foreach (Instruction i in comparator) {
+						   program.Add(i);
+						}
+						program.Add(new Instruction("", "NEqu"));
+						program.Add(new Instruction("", "FJmp "+fallintoLabel));
+						
+					}
+				}
 				Expect(26);
 				if (type1 != type) {
 				   SemErr("types differ in switch statement case");
@@ -1229,20 +1261,22 @@ TastierKind kind) {
 				openLabels.Push(generateLabel());
 				program.Add(new Instruction("", "Equ"));
 				program.Add(new Instruction("", "FJmp "+openLabels.Peek()));
+				if (needsLabel)
+				   program.Add(new Instruction(fallintoLabel, "Nop"));
 				
 				Stat();
 				program.Add(new Instruction("", "Jmp "+endLabel));
 				program.Add(new Instruction(openLabels.Pop(), "Nop"));
 				
 			}
-			Expect(34);
+			Expect(35);
 			Stat();
 			program.Add(new Instruction(endLabel, "Nop"));
 			
 			Expect(16);
 			break;
 		}
-		case 35: {
+		case 36: {
 			Get();
 			Ident(out name);
 			Expect(24);
@@ -1281,7 +1315,7 @@ TastierKind kind) {
 			
 			break;
 		}
-		case 36: {
+		case 37: {
 			Get();
 			Expr(out type);
 			if (type == TastierType.Integer) {
@@ -1294,7 +1328,7 @@ TastierKind kind) {
 			   SemErr("unexpected type");
 			}
 			
-			while (la.kind == 37) {
+			while (la.kind == 34) {
 				Get();
 				Expr(out type);
 				if (type == TastierType.Integer) {
@@ -1470,7 +1504,7 @@ TastierKind kind) {
 		
 		header.Add(new Instruction("", ".names " + (externalDeclarations.Count + openScopes.Peek().Count)));
 		foreach (Symbol s in openScopes.Peek()) {
-		 if (s.Item2 == (int)TastierKind.Var) {
+		 if (s.Item2 == (int)TastierKind.Var || s.Item2 == (int)TastierKind.Array) {
 		   header.Add(new Instruction("", ".var " + ((int)s.Item3) + " " + s.Item1));
 		 } else if (s.Item2 == (int)TastierKind.Proc) {
 		   header.Add(new Instruction("", ".proc " + s.Item1));
@@ -1511,8 +1545,7 @@ TastierKind kind) {
 		 sym = new Symbol(name, (int)TastierKind.Const, (int)type,0, 0);
 		 externalDeclarations.Push(sym);
 		} else {
-		 sym = new Symbol(name, (int)TastierKind.Const, (int)type,
-		 openScopes.Count-1,globalPtr++);
+		 sym = new Symbol(name, (int)TastierKind.Const, (int)type, openScopes.Count-1, globalPtr++);
 		 currentScope.Push(sym);
 		}
 		if (sym.Item4 == 0) {
@@ -1571,9 +1604,9 @@ TastierKind kind) {
 	static readonly bool[,] set = {
 		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
 		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,T,T, T,T,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
-		{x,T,x,x, x,x,x,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,x,x, x,x,x,T, x,T,T,x, T,x,x,T, T,x,x,T, T,T,x,x, x,x,x},
-		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,x,x,x, x,x,x,x, x,x,x,T, x,T,T,x, T,x,x,T, T,x,x,x, x,x,x,x, x,x,x},
-		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,x,x,x, x,x,x,x, x,x,x,T, x,T,T,x, T,x,x,T, T,x,x,T, T,T,x,x, x,x,x},
+		{x,T,x,x, x,x,x,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,x,x, x,x,x,T, x,T,T,x, T,x,x,x, T,T,x,T, T,T,x,x, x,x,x},
+		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,x,x,x, x,x,x,x, x,x,x,T, x,T,T,x, T,x,x,x, T,T,x,x, x,x,x,x, x,x,x},
+		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,x,x,x, x,x,x,x, x,x,x,T, x,T,T,x, T,x,x,x, T,T,x,T, T,T,x,x, x,x,x},
 		{x,x,x,x, x,x,x,x, x,x,x,x, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,x, T,x,x}
 
 	};
@@ -1622,10 +1655,10 @@ public class Errors {
 			case 31: s = "\"do\" expected"; break;
 			case 32: s = "\"switch\" expected"; break;
 			case 33: s = "\"case\" expected"; break;
-			case 34: s = "\"default:\" expected"; break;
-			case 35: s = "\"read\" expected"; break;
-			case 36: s = "\"write\" expected"; break;
-			case 37: s = "\",\" expected"; break;
+			case 34: s = "\",\" expected"; break;
+			case 35: s = "\"default:\" expected"; break;
+			case 36: s = "\"read\" expected"; break;
+			case 37: s = "\"write\" expected"; break;
 			case 38: s = "\"program\" expected"; break;
 			case 39: s = "\"int\" expected"; break;
 			case 40: s = "\"bool\" expected"; break;

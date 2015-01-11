@@ -371,7 +371,7 @@ ExprK<out TastierType type,
 
 /*------------------------------------------------------------------------*/
 
-Factor<out TastierType type>    (.  int n; Symbol sym; string name; .)
+Factor<out TastierType type>    (.  int n; Symbol sym; string name; TastierType type1;.)
 =                               (.  type = TastierType.Undefined; .)
   ( Ident<out name>             (.
                                     bool isExternal = false; //CS3071 students can ignore external declarations, since they only deal with compilation of single files.
@@ -418,15 +418,15 @@ Factor<out TastierType type>    (.  int n; Symbol sym; string name; .)
                                     // keep a count of how many array dimensions are declared. this is to make sure that it's consistant with the declaration of the array
                                     int count = 0;
                                 .)
-    '[' SimFactor<out type> ']'    (.  
-                                    if (type != TastierType.Integer) {
+    '[' SimFactor<out type1> ']'    (.  
+                                    if (type1 != TastierType.Integer) {
                                         SemErr("Integer index expected");
                                     }
                                     count++;
                                 .)
     {
-      '[' SimFactor<out type> ']'  (.  
-                                    if (type != TastierType.Integer) {
+      '[' SimFactor<out type1> ']'  (.  
+                                    if (type1 != TastierType.Integer) {
                                         SemErr("Integer index expected");
                                     }
                                     count++;
@@ -947,6 +947,38 @@ Stat                            (.  TastierType type, type1, type2; string name;
   {
     "case"
     Factor<out type1>
+                                (. string fallintoLabel = generateLabel(); bool needsLabel = false; .)
+    [ 
+        ","
+        Factor<out type2>       (.
+                                    needsLabel = true;
+
+                                    if (type2 != type) {
+                                        SemErr("types differ in switch statement case");
+                                    }
+
+                                    foreach (Instruction i in comparator) {
+                                        program.Add(i);
+                                    }
+                                    program.Add(new Instruction("", "NEqu"));
+                                    program.Add(new Instruction("", "FJmp "+fallintoLabel));
+                                .)
+        {
+            ","
+            Factor<out type2>   (.
+                                    if (type2 != type) {
+                                        SemErr("types differ in switch statement case");
+                                    }
+
+                                    foreach (Instruction i in comparator) {
+                                        program.Add(i);
+                                    }
+                                    program.Add(new Instruction("", "NEqu"));
+                                    program.Add(new Instruction("", "FJmp "+fallintoLabel));
+                                .)
+        }
+    ]
+
     ':'
                                 (.
                                     if (type1 != type) {
@@ -959,6 +991,8 @@ Stat                            (.  TastierType type, type1, type2; string name;
                                     openLabels.Push(generateLabel());
                                     program.Add(new Instruction("", "Equ"));
                                     program.Add(new Instruction("", "FJmp "+openLabels.Peek()));
+                                    if (needsLabel)
+                                        program.Add(new Instruction(fallintoLabel, "Nop"));
                                 .)
     Stat                        (.
                                     program.Add(new Instruction("", "Jmp "+endLabel));
@@ -1143,7 +1177,7 @@ Tastier                         (.  string name; bool external = false; .)
 
                                     header.Add(new Instruction("", ".names " + (externalDeclarations.Count + openScopes.Peek().Count)));
                                     foreach (Symbol s in openScopes.Peek()) {
-                                      if (s.Item2 == (int)TastierKind.Var) {
+                                      if (s.Item2 == (int)TastierKind.Var || s.Item2 == (int)TastierKind.Array) {
                                         header.Add(new Instruction("", ".var " + ((int)s.Item3) + " " + s.Item1));
                                       } else if (s.Item2 == (int)TastierKind.Proc) {
                                         header.Add(new Instruction("", ".proc " + s.Item1));
@@ -1266,6 +1300,7 @@ VarDecl<bool external>          (.
         ']'
     }
                                 (.  
+                                    a.position = globalPtr;
                                     arrays.Add(a);
                                     globalPtr += a.size();    
                                 .)
@@ -1312,8 +1347,7 @@ ConstDecl<bool external>        (.
                                       sym = new Symbol(name, (int)TastierKind.Const, (int)type,0, 0);
                                       externalDeclarations.Push(sym);
                                     } else {
-                                      sym = new Symbol(name, (int)TastierKind.Const, (int)type,
-                                      openScopes.Count-1,globalPtr++);
+                                      sym = new Symbol(name, (int)TastierKind.Const, (int)type, openScopes.Count-1, globalPtr++);
                                       currentScope.Push(sym);
                                     }
                                     if (sym.Item4 == 0) {

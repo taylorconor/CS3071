@@ -210,8 +210,11 @@ run = do
 
         Instructions.WriteS -> do
           let ptr = smem ! (rtp-1)
-          put $ machine { rpc = rpc + 1, rtp = rtp + 1, pbuf = pbuf ++ (getStr (ptr-3) dmem "") }
-          run
+          if ptr < 3 then do
+            error $ "null pointer error; string not initialised"
+          else do
+            put $ trace("ptr = "++show ptr) $ machine { rpc = rpc + 1, rtp = rtp + 1, pbuf = pbuf ++ (getStr (ptr-3) dmem "") }
+            run
           where
             getStr :: Int16 -> (Array Int16 Int16) -> String -> String
             getStr i m s
