@@ -98,7 +98,7 @@ run = do
           run
 
         Instructions.Nop -> do
-          put $ machine { rpc = rpc + 1 }
+          put $ trace("smem = "++take 200 (show smem)++"\ndmem = "++take 200 (show dmem)) $ machine { rpc = rpc + 1 }
           run
 
         Instructions.Add -> do
@@ -358,8 +358,8 @@ run = do
               
           case checkBounds indices dimensions of
             (True,_)   -> do
-                put $ trace("S: indices = "++show indices++", dimensions = "++show dimensions++", offset = "++show offset++", tuple = ("++show (a+offset-3)++", "++show (smem ! (rtp - (1 + b * 2)))++")") $ machine { rpc = rpc + 1, rtp = rtp - (2 * b + 1),
-                          dmem = (dmem // [(a+offset-3, smem ! (rtp - (1 + b * 2)))]) }
+                put $ machine { rpc = rpc + 1, rtp = rtp - (2 * b) - 1,
+                          dmem = (dmem // [(a+offset-3, smem ! (rtp - (b * 2) - 1))]) }
                 run
             (False,s)  -> do
                 error $ "Index out of bounds error: "++show s
@@ -405,7 +405,7 @@ run = do
               dimensions    = getIndices b b [] 
               offset        = getOffset (b-1) indices dimensions (last indices)
           
-          put $ trace("L: indices = "++show indices++", dimensions = "++show dimensions++", offset = "++show offset++", tuple = ("++show rtp++", "++show (dmem ! (a+offset-3))++")") $ machine { rpc = rpc + 1, rtp = rtp - (2 * b) + 1,
+          put $ machine { rpc = rpc + 1, rtp = rtp - (2 * b) + 1,
                           smem = (smem // [(rtp - (2 * b), (dmem ! (a+offset-3)))]) }
           run
           where
